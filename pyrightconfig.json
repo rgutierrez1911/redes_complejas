@@ -1,0 +1,6 @@
+{
+  "venvPath": "/root/pry/aplicacion_manos",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic"
+}

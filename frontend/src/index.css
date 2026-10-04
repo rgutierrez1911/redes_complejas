@@ -1,0 +1,103 @@
+:root {
+  --font-main: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Color Palette - Sober Academic Slate & Scientific Dark Theme */
+  --bg-dark: #0b0f17;
+  --bg-surface: #111827;
+  --bg-card: #131b2e;
+  --bg-card-hover: #1e293b;
+  --bg-card-active: #243248;
+  --bg-glass: rgba(255, 255, 255, 0.04);
+  --bg-glass-active: rgba(255, 255, 255, 0.08);
+
+  /* Academic Semantic Accents (Sober, High Contrast, Non-Neon) */
+  --academic-blue: #2563eb;
+  --academic-blue-light: #3b82f6;
+  --academic-teal: #0d9488;
+  --academic-cyan: #0284c7;
+  --academic-indigo: #4f46e5;
+  --academic-purple: #7c3aed;
+  --academic-emerald: #059669;
+  --academic-green: #16a34a;
+  --academic-amber: #d97706;
+  --academic-rose: #dc2626;
+  --academic-slate: #64748b;
+
+  /* Text & Borders */
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border-subtle: #1e293b;
+  --border-card: #334155;
+  --border-card-hover: #475569;
+  --border-highlight: #3b82f6;
+
+  /* Clean Elevation Shadows (No colored neon bloom) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 24px -3px rgba(0, 0, 0, 0.5);
+
+  /* Transitions */
+  --transition-fast: 0.12s ease-out;
+  --transition-smooth: 0.2s ease-out;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-dark);
+  background-image: 
+    linear-gradient(180deg, #0b0f17 0%, #0e1420 100%);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Subdued Animation (No intense pulsing or laser radars) */
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+

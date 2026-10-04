@@ -1,0 +1,15 @@
+{
+  "name": "aplicacion-manos",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=frontend",
+    "dev": "npm run dev --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend",
+    "streamlit": ".venv/bin/streamlit run streamlit_app.py --server.port 8501",
+    "backend": ".venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
+  }
+}
