@@ -1,12 +1,13 @@
-import { createSignal, onMount, Show } from 'solid-js';
+import { createSignal, createEffect, onMount, Show } from 'solid-js';
 import type { Component } from 'solid-js';
 import { useWebcamStream } from './hooks/useWebcamStream';
-import type { KeyboardItem } from './types';
+import type { KeyboardItem, DiffusionTopItem } from './types';
 import { Header } from './components/Header';
 import { CameraStream } from './components/CameraStream';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { SentenceBuilder } from './components/SentenceBuilder';
 import { SettingsModal } from './components/SettingsModal';
+import { NetworkDashboard } from './components/NetworkDashboard';
 import { sounds } from './utils/sound';
 import './App.css';
 
@@ -52,13 +53,23 @@ const DEFAULT_KEYBOARD: KeyboardItem[] = [
   { id: 'limpiar', text: 'Limpiar', category: 'acciones', action: 'clear', color: '#475569' },
 ];
 
+const DEFAULT_SUGGESTIONS: DiffusionTopItem[] = [
+  { id: 'quiero', label: 'quiero', category: 'verbos', color: '#d97706', intensity: 0.35, prob_adjusted: 35.0, prob_global: 5.2, global_energy: 0.052 },
+  { id: 'necesito', label: 'necesito', category: 'verbos', color: '#d97706', intensity: 0.26, prob_adjusted: 26.0, prob_global: 4.1, global_energy: 0.041 },
+  { id: 'voy', label: 'voy', category: 'verbos', color: '#d97706', intensity: 0.18, prob_adjusted: 18.0, prob_global: 3.2, global_energy: 0.032 },
+  { id: 'casa', label: 'casa', category: 'lugares', color: '#0d9488', intensity: 0.12, prob_adjusted: 12.0, prob_global: 2.1, global_energy: 0.021 },
+  { id: 'hoy', label: 'hoy', category: 'modificadores', color: '#7c3aed', intensity: 0.09, prob_adjusted: 9.0, prob_global: 1.5, global_energy: 0.015 },
+];
+
 export const App: Component = () => {
   const [keyboardItems, setKeyboardItems] = createSignal<KeyboardItem[]>(DEFAULT_KEYBOARD);
   const [sentenceWords, setSentenceWords] = createSignal<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = createSignal<boolean>(false);
+  const [isNetworksOpen, setIsNetworksOpen] = createSignal<boolean>(false);
   const [showCamera, setShowCamera] = createSignal<boolean>(true);
   const [isMuted, setIsMuted] = createSignal<boolean>(false);
   const [speechLang, setSpeechLang] = createSignal<string>('es-ES');
+  const [suggestedWords, setSuggestedWords] = createSignal<DiffusionTopItem[]>(DEFAULT_SUGGESTIONS);
 
   const {
     setVideoRef,
@@ -93,6 +104,37 @@ export const App: Component = () => {
       .catch((err) => {
         console.warn('Usando configuración por defecto de teclado:', err);
       });
+
+    // Carga inicial de difusión
+    fetch('/api/network/diffusion?source_id=yo&time_s=0.5')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.diffusion_steps && data.diffusion_steps.length > 0) {
+          const top = data.diffusion_steps[0]?.top_activated ?? [];
+          if (top.length > 0) {
+            setSuggestedWords(top.slice(0, 5));
+          }
+        }
+      })
+      .catch(() => {});
+  });
+
+  // Cada vez que cambia la frase, obtener predicción de difusión continua
+  createEffect(() => {
+    const words = sentenceWords();
+    const source = words.length > 0 ? words[words.length - 1].toLowerCase() : 'yo';
+
+    fetch(`/api/network/diffusion?source_id=${encodeURIComponent(source)}&time_s=0.5`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.diffusion_steps && data.diffusion_steps.length > 0) {
+          const top = data.diffusion_steps[0]?.top_activated ?? [];
+          if (top.length > 0) {
+            setSuggestedWords(top.slice(0, 5));
+          }
+        }
+      })
+      .catch(() => {});
   });
 
   const handleToggleMute = () => {
@@ -103,6 +145,11 @@ export const App: Component = () => {
 
   const handleSelectItem = (item: KeyboardItem) => {
     setSentenceWords((prev) => [...prev, item.text]);
+  };
+
+  const handleSelectWordDirect = (wordText: string) => {
+    setSentenceWords((prev) => [...prev, wordText]);
+    sounds.playSelectSound(false);
   };
 
   const handleDeleteWord = () => {
@@ -133,6 +180,7 @@ export const App: Component = () => {
         serverFps={Math.round(detectionResult()?.fps ?? 0)}
         latencyMs={latencyMs()}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenNetworks={() => setIsNetworksOpen(true)}
         showCamera={showCamera()}
         onToggleCamera={() => setShowCamera(!showCamera())}
       />
@@ -144,11 +192,14 @@ export const App: Component = () => {
           <section class="keyboard-stage">
             <VirtualKeyboard
               items={keyboardItems()}
+              suggestedWords={suggestedWords()}
               pointer={detectionResult()?.pointer ?? null}
               isActive={detectionResult()?.is_active ?? false}
               isPinching={detectionResult()?.is_pinching ?? false}
               dwellThreshold={config().dwell_threshold}
               onSelectItem={handleSelectItem}
+              onSelectWordDirect={handleSelectWordDirect}
+              onOpenNetworks={() => setIsNetworksOpen(true)}
               onDeleteItem={handleDeleteWord}
               onClearSentence={handleClearSentence}
               onSpeakSentence={handleSpeakSentence}
@@ -179,6 +230,15 @@ export const App: Component = () => {
           </Show>
         </div>
       </main>
+
+      {/* Network Metrics Exploration Modal */}
+      <NetworkDashboard
+        isOpen={isNetworksOpen()}
+        onClose={() => setIsNetworksOpen(false)}
+        sentenceWords={sentenceWords()}
+        keyboardItems={keyboardItems()}
+        onSelectWord={handleSelectWordDirect}
+      />
 
       {/* Settings Dialog Modal */}
       <SettingsModal

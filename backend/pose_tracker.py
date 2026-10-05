@@ -4,8 +4,15 @@ from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-import torch
-from ultralytics import YOLO
+
+try:
+    import torch
+    from ultralytics import YOLO
+    YOLO_AVAILABLE = True
+except ImportError:
+    torch = None
+    YOLO = None
+    YOLO_AVAILABLE = False
 
 from backend.models import GestureDetectionResult, Keypoint, PointerCoords, TrackerConfig
 

@@ -47,3 +47,113 @@ class KeyboardItem(BaseModel):
     category: str
     action: Optional[str] = None
     color: str
+
+
+# ==============================================================================
+# Modelos de Redes Complejas y Análisis Estructural
+# ==============================================================================
+
+class NodeCentralityItem(BaseModel):
+    id: str
+    label: str
+    category: str
+    color: str
+    role: Optional[str] = ""
+    degree_raw: int
+    in_degree: int
+    out_degree: int
+    degree_centrality: float
+    in_degree_centrality: float
+    out_degree_centrality: float
+    closeness_centrality: float
+    betweenness_centrality: float
+    pagerank: float
+    eigenvector_centrality: float
+    community: int
+
+
+class GlobalTopologyResponse(BaseModel):
+    num_nodes: int
+    num_edges: int
+    avg_degree: float
+    density: float
+    avg_clustering: float
+    avg_shortest_path: float
+    diameter: int
+    small_world_sigma: float
+    is_small_world: bool
+    modularity_q: float
+    num_communities: int
+    fiedler_eigenvalue: float
+    reciprocity: float
+    degree_assortativity: float
+
+
+class PercolationPoint(BaseModel):
+    fraction_removed: float
+    giant_component_ratio_random: float
+    giant_component_ratio_betweenness: float
+    giant_component_ratio_degree: float
+
+
+class DiffusionTopItem(BaseModel):
+    id: str
+    label: str
+    category: str
+    color: str
+    intensity: float  # Probabilidad relativa ajustada (0.0 - 1.0)
+    global_energy: Optional[float] = 0.0  # Masa de activación absoluta en la red (0.0 - 1.0)
+    prob_adjusted: Optional[float] = 0.0  # Porcentaje condicional ajustado (ej. 34.5%)
+    prob_global: Optional[float] = 0.0  # Porcentaje global disipado en el grafo (ej. 5.2%)
+
+
+class DiffusionStepItem(BaseModel):
+    time: float
+    activations: dict
+    top_activated: List[DiffusionTopItem]
+
+
+class DiffusionResponse(BaseModel):
+    source_node: str
+    source_label: str
+    fiedler_eigenvalue: float
+    characteristic_diffusion_time_s: float
+    diffusion_steps: List[DiffusionStepItem]
+
+
+class MessageEvolutionStep(BaseModel):
+    step_index: int
+    selected_token: str
+    label: str
+    num_nodes: int
+    num_edges: int
+    density: float
+    avg_clustering: float
+    entropy: float
+
+
+class MessageAnalysisRequest(BaseModel):
+    tokens: Optional[List[str]] = None
+    text: Optional[str] = None
+
+
+class MessageAnalysisResponse(BaseModel):
+    message_text: str
+    message_tokens: List[str]
+    total_words: int
+    graph_nodes: List[dict]
+    graph_edges: List[dict]
+    evolution_steps: List[MessageEvolutionStep]
+    message_metrics: GlobalTopologyResponse
+    topological_centralities: List[NodeCentralityItem]
+    communities: dict
+    resilience_curve: List[PercolationPoint]
+    diffusion_forecast: dict
+    semantic_coherence_percentage: float
+    fitts_reduction_percentage: float
+
+
+class SessionRecordRequest(BaseModel):
+    token: str
+    timestamp: Optional[float] = None
+

@@ -566,9 +566,16 @@ st.markdown("---")
 # ==============================================================================
 # 8. Modos de Video y Captura de Gestos
 # ==============================================================================
-tab_webrtc, tab_local, tab_keyboard, tab_history = st.tabs(
-    ["📹 Cámara WebRTC (Navegador)", "📷 Cámara Local OpenCV", "⌨️ Teclado Táctil / Virtual", "📜 Historial de Frases"]
+tab_webrtc, tab_local, tab_keyboard, tab_history, tab_network = st.tabs(
+    [
+        "📹 Cámara WebRTC",
+        "📷 Cámara Local OpenCV",
+        "⌨️ Teclado Táctil",
+        "📜 Historial",
+        "🕸️ Redes Complejas & Difusión",
+    ]
 )
+
 
 # ------------------------------------------------------------------------------
 # TAB 1: Streamlit WebRTC (Procesamiento en tiempo real)
@@ -730,3 +737,74 @@ with tab_history:
             st.rerun()
     else:
         st.write("Aún no se han expresado frases en esta sesión.")
+
+# ------------------------------------------------------------------------------
+# TAB 5: Análisis de Redes Complejas & Difusión
+# ------------------------------------------------------------------------------
+with tab_network:
+    from backend.network_analysis import network_engine
+
+    st.markdown("### 🕸️ Explorador Topológico y Dinámica de Interacción")
+    st.markdown(
+        "Caracterización cuantitativa del teclado virtual y análisis dinámico de la secuencia de palabras actual."
+    )
+
+    current_words = [i.id for i in st.session_state.sentence]
+    if not current_words:
+        current_words = ["yo", "quiero", "casa", "hoy", "hablar"]
+        st.caption("ℹ️ Mostrando análisis para la frase de ejemplo: *'Yo quiero casa hoy Escuchar'*")
+    else:
+        st.caption(f"ℹ️ Analizando frase actual ({len(current_words)} palabras): *'{' '.join(current_words)}'*")
+
+    analysis = network_engine.analyze_message_sequence(current_words)
+    metrics = analysis["message_metrics"]
+
+    # 1. KPIs Topológicos
+    k1, k2, k3, k4, k5, k6 = st.columns(6)
+    k1.metric("Nodos Activos (N)", metrics["num_nodes"])
+    k2.metric("Transiciones (M)", metrics["num_edges"])
+    k3.metric("Entropía de Markov", f"{analysis['evolution_steps'][-1]['entropy']:.2f} b")
+    k4.metric("Modularidad Q", f"{metrics['modularity_q']:.3f}")
+    k5.metric("Coherencia Sintáctica", f"{analysis['semantic_coherence_percentage']:.0f}%")
+    k6.metric("Ahorro Fitts", f"-{analysis['fitts_reduction_percentage']:.0f}%")
+
+    st.markdown("---")
+
+    col_diff, col_cent = st.columns([1, 1])
+
+    with col_diff:
+        st.markdown("#### 🌊 Difusión Laplaciana Continua ($e^{-\mathbf{L}t}$)")
+        st.caption(
+            f"Conectividad de Fiedler $\\lambda_2 = {analysis['diffusion_forecast']['fiedler_eigenvalue']:.3f}$ • Tiempo $\\tau_{{diff}} = {analysis['diffusion_forecast']['characteristic_diffusion_time_s']:.2f}s$"
+        )
+
+        top_pred = analysis["diffusion_forecast"]["diffusion_steps"][0]["top_activated"]
+        for p in top_pred:
+            st.progress(
+                min(1.0, float(p["intensity"])),
+                text=f"{p['label']} ({p['category']}): {p['intensity']*100:.1f}%",
+            )
+
+    with col_cent:
+        st.markdown("#### ⭐ Ranking de Centralidad de Intermediación ($C_B$)")
+        cents = sorted(
+            analysis["topological_centralities"],
+            key=lambda x: x["betweenness_centrality"],
+            reverse=True,
+        )[:6]
+        for c in cents:
+            st.write(
+                f"• **{c['label']}** ({c['category']}): $C_B = {c['betweenness_centrality']:.4f}$ | $C_D = {c['degree_centrality']:.3f}$"
+            )
+
+    st.markdown("---")
+    st.markdown("#### 🛡️ Resiliencia y Percolación del Teclado ($S = N_{GCC}/N$)")
+    perc = analysis["resilience_curve"]
+    st.line_chart(
+        {
+            "Fallo Aleatorio": [p["giant_component_ratio_random"] for p in perc],
+            "Ataque Betweenness": [p["giant_component_ratio_betweenness"] for p in perc],
+            "Ataque Grado": [p["giant_component_ratio_degree"] for p in perc],
+        }
+    )
+

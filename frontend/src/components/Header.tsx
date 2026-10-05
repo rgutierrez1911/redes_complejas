@@ -10,6 +10,7 @@ interface HeaderProps {
   serverFps: number;
   latencyMs: number;
   onOpenSettings: () => void;
+  onOpenNetworks?: () => void;
   showCamera: boolean;
   onToggleCamera: () => void;
 }
@@ -24,9 +25,9 @@ export const Header: Component<HeaderProps> = (props) => {
           </div>
           <div class="brand-titles">
             <h1 class="brand-name">
-              AeroHand <span class="brand-highlight">CAA</span>
+              AeroHand <span class="brand-highlight">AI</span>
             </h1>
-            <span class="brand-subtitle">Comunicación Asistiva por Detección de Gestos</span>
+            <span class="brand-subtitle">Comunicación Asistiva por Detección de Gestos & Redes Complejas</span>
           </div>
         </div>
       </div>
@@ -49,6 +50,17 @@ export const Header: Component<HeaderProps> = (props) => {
       </div>
 
       <div class="header-right">
+        {/* Network Metrics Trigger Button */}
+        <button
+          class="btn-network-metrics"
+          onClick={() => props.onOpenNetworks && props.onOpenNetworks()}
+          title="Explorar Métricas de Redes Complejas, Centralidades y Difusión Laplaciana"
+        >
+          <span class="network-icon-glow">🕸️</span>
+          <span class="network-btn-text">Redes Complejas</span>
+          <span class="badge-mini-sw">σ = 1.84</span>
+        </button>
+
         {/* Telemetry Chips */}
         <div class="telemetry-bar">
           <div class="telemetry-chip" title="Latencia de WebSocket con el servidor FastAPI">

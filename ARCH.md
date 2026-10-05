@@ -34,9 +34,10 @@ AeroHand AI is a real-time, contactless assistive Augmentative and Alternative C
   - `package.json`: NPM workspace definition managing the frontend package.
   - `yolov8n-pose.pt`: Pre-trained YOLOv8 nano pose model weights.
   - `hand_landmarker.task`: MediaPipe hand tracking binary model task.
-- `backend/`: FastAPI application and computer vision processing module.
-  - `backend/main.py`: Application entry point, HTTP REST endpoints, WebSocket streaming handler, and static file server.
-  - `backend/models.py`: Pydantic schemas for keypoints, pointer coordinates, telemetry, and tracker configurations.
+- `backend/`: FastAPI application, computer vision processing, and complex network analysis module.
+  - `backend/main.py`: Application entry point, HTTP REST endpoints, WebSocket streaming handler, static file server, and network analysis endpoints.
+  - `backend/models.py`: Pydantic schemas for keypoints, pointer coordinates, telemetry, tracker configurations, and complex network graph metrics.
+  - `backend/network_analysis.py`: Complex Networks analytical engine (topological metrics, null models, spectral centralities, Louvain communities, percolation resilience, message evolution, and continuous Laplacian diffusion).
   - `backend/pose_tracker.py`: YOLOv8-Pose inference pipeline, ergonomic pointer mapping, and exponential moving average (EMA) filter.
 - `frontend/`: Single-page client application built with SolidJS, TypeScript, and Vite.
   - `frontend/vite.config.ts`: Vite build config with Solid plugin and `/api` + `/ws` reverse proxy definitions.
@@ -100,20 +101,31 @@ class GestureDetectionResult(BaseModel):
 
 ### Backend REST & WebSocket Endpoints (`backend/main.py`)
 ```
-GET  /api/health       -> {"status": str, "service": str, "device": str, "model": str}
-GET  /api/config       -> {"tracker_config": TrackerConfig, "keyboard_items": List[KeyboardItem]}
-POST /api/config       -> In: TrackerConfig | Out: {"status": "updated", "config": dict}
-WS   /ws/stream        -> Bidirectional frame/state streaming
-  Inbound Binary:      JPEG/WebP raw image buffer
-  Inbound Text JSON:   {"type": "config", "data": TrackerConfig}
-                     | {"type": "set_active", "active": bool}
-                     | {"type": "ping", "timestamp": number}
-  Outbound Text JSON:  GestureDetectionResult
-                     | {"type": "config_ack", "config": dict}
-                     | {"type": "state_ack", "is_active": bool}
-                     | {"type": "pong", "timestamp": number}
-                     | {"error": str}
-GET  /{full_path:path} -> Serves SPA static files from frontend/dist
+GET  /api/health            -> {"status": str, "service": str, "device": str, "model": str}
+GET  /api/config            -> {"tracker_config": TrackerConfig, "keyboard_items": List[KeyboardItem]}
+POST /api/config            -> In: TrackerConfig | Out: {"status": "updated", "config": dict}
+GET  /api/network/static    -> Global topology metrics, null models, centralities, Louvain communities & resilience
+POST /api/network/message-analysis -> In: MessageAnalysisRequest | Out: MessageAnalysisResponse (dynamic sequence evolution, Louvain, diffusion forecast, Fitts law reduction)
+GET  /api/network/diffusion -> In: ?source_id=str&time_s=float | Out: Laplacian continuous diffusion steps
+GET  /api/network/resilience -> In: ?steps=int | Out: Percolation curves (random vs betweenness vs degree attack)
+POST /api/network/session/record -> In: SessionRecordRequest | Out: Dynamic live session tracking update
+GET  /api/network/session/summary -> Accumulated live session network analysis
+POST /api/network/session/clear   -> Resets live session graph
+WS   /ws/stream             -> Bidirectional frame/state/network streaming
+  Inbound Binary:           JPEG/WebP raw image buffer
+  Inbound Text JSON:        {"type": "config", "data": TrackerConfig}
+                          | {"type": "set_active", "active": bool}
+                          | {"type": "word_selected", "token": str}
+                          | {"type": "analyze_sentence", "tokens": List[str]}
+                          | {"type": "ping", "timestamp": number}
+  Outbound Text JSON:       GestureDetectionResult
+                          | {"type": "config_ack", "config": dict}
+                          | {"type": "state_ack", "is_active": bool}
+                          | {"type": "network_diffusion_update", "data": dict}
+                          | {"type": "message_network_analysis_result", "data": dict}
+                          | {"type": "pong", "timestamp": number}
+                          | {"error": str}
+GET  /{full_path:path}      -> Serves SPA static files from frontend/dist
 ```
 
 ### Backend Classes (`backend/pose_tracker.py`)

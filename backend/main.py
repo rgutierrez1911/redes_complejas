@@ -149,6 +149,114 @@ async def update_config(config: TrackerConfig):
     return {"status": "updated", "config": config.model_dump()}
 
 
+# ==============================================================================
+# Endpoints de Redes Complejas y Análisis Estructural
+# ==============================================================================
+from backend.models import (
+    DiffusionResponse,
+    GlobalTopologyResponse,
+    MessageAnalysisRequest,
+    MessageAnalysisResponse,
+    NodeCentralityItem,
+    PercolationPoint,
+    SessionRecordRequest,
+)
+from backend.network_analysis import network_engine, session_tracker
+
+
+@app.get("/api/network/static")
+async def get_static_network_analysis():
+    """
+    Retorna la caracterización topológica completa del teclado base de referencia:
+    - Métricas globales y clasificación de Mundo Pequeño (sigma).
+    - Comparación formal con modelos nulos (Erdős-Rényi, Watts-Strogatz, Barabási-Albert).
+    - Ranking de centralidades (Grado, Cercanía, Intermediación, PageRank, Eigenvector).
+    - Partición en comunidades de Louvain y Modularidad Q.
+    - Curva de resiliencia estructural ante percolación aleatoria y ataques dirigidos.
+    - Conectividad algebraica de Fiedler.
+    """
+    metrics = network_engine.compute_global_metrics()
+    null_models = network_engine.compare_null_models()
+    centralities = network_engine.compute_centralities()
+    communities = network_engine.detect_communities_louvain()
+    percolation = network_engine.simulate_percolation()
+
+    return {
+        "status": "success",
+        "global_metrics": metrics,
+        "null_models": null_models,
+        "centralities": centralities,
+        "communities": communities,
+        "resilience_curve": percolation,
+    }
+
+
+@app.post("/api/network/message-analysis", response_model=MessageAnalysisResponse)
+async def analyze_message_network(request: MessageAnalysisRequest):
+    """
+    Analiza la estructura dinámica y evolución temporal del grafo generado
+    por una secuencia de palabras durante la construcción de un mensaje.
+    """
+    tokens = request.tokens
+    if not tokens and request.text:
+        tokens = [t.strip() for t in request.text.split() if t.strip()]
+    if not tokens:
+        tokens = ["yo", "quiero", "casa", "hoy", "hablar"]
+
+    result = network_engine.analyze_message_sequence(tokens)
+    return result
+
+
+@app.get("/api/network/diffusion")
+async def get_laplacian_diffusion(source_id: str = "yo", time_s: float = 0.5):
+    """
+    Simula el proceso de difusión continua sobre el Laplaciano del grafo
+    desde una tecla fuente, modelando la pre-activación atencional y motriz.
+    """
+    sim = network_engine.simulate_laplacian_diffusion(
+        source_id=source_id,
+        times=[0.1, 0.25, time_s, 1.0, 2.0]
+    )
+    return sim
+
+
+@app.get("/api/network/resilience")
+async def get_resilience_analysis(steps: int = 11):
+    """
+    Retorna la simulación de percolación comparando fallos aleatorios
+    frente a ataques dirigidos por Betweenness y Degree.
+    """
+    curve = network_engine.simulate_percolation(steps=steps)
+    return {"status": "success", "steps": steps, "curve": curve}
+
+
+@app.post("/api/network/session/record")
+async def record_session_token(request: SessionRecordRequest):
+    """
+    Registra una palabra seleccionada en vivo durante la interacción del usuario.
+    """
+    res = session_tracker.record_selection(request.token, request.timestamp)
+    return {"status": "recorded", "data": res}
+
+
+@app.get("/api/network/session/summary")
+async def get_session_summary():
+    """
+    Retorna el análisis de redes complejas acumulado en la sesión activa del usuario.
+    """
+    summary = session_tracker.get_summary()
+    return summary
+
+
+@app.post("/api/network/session/clear")
+async def clear_session():
+    """
+    Reinicia el grafo de interacción de la sesión en vivo.
+    """
+    session_tracker.clear()
+    return {"status": "cleared", "message": "Sesión reiniciada con éxito."}
+
+
 @app.websocket("/ws/stream")
 async def websocket_stream_endpoint(websocket: WebSocket):
     global tracker
@@ -205,6 +313,31 @@ async def websocket_stream_endpoint(websocket: WebSocket):
                         await websocket.send_text(
                             json.dumps(
                                 {"type": "state_ack", "is_active": tracker.is_active}
+                            )
+                        )
+
+                    elif msg_type == "word_selected" or msg_type == "token_selected":
+                        tok = payload.get("token", "")
+                        if tok:
+                            rec_info = session_tracker.record_selection(tok)
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "type": "network_diffusion_update",
+                                        "data": rec_info
+                                    }
+                                )
+                            )
+
+                    elif msg_type == "analyze_sentence":
+                        tokens = payload.get("tokens", [])
+                        analysis = network_engine.analyze_message_sequence(tokens)
+                        await websocket.send_text(
+                            json.dumps(
+                                {
+                                    "type": "message_network_analysis_result",
+                                    "data": analysis
+                                }
                             )
                         )
 
